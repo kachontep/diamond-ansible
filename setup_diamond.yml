@@ -1,0 +1,45 @@
+---
+- name: Setup Diamond
+  hosts: all
+  become: true
+
+  vars:
+    diamond_user: root
+    diamond_group: root
+
+  tasks:
+    - name: Install dependency packages
+      apt: name=python-pip state=present
+
+    - name: Install diamond python package
+      pip: name=diamond state=present
+
+    - name: Create configuration and logging directories
+      file:
+        path: "{{item}}"
+        state: directory
+        owner: "{{diamond_user}}"
+        group: "{{diamond_group}}"
+      with_items:
+        - /etc/diamond
+        - /etc/diamond/handlers
+        - /etc/diamond/collectors
+        - /var/log/diamond
+
+    - name: Update diamond configuration file
+      template:
+        src: templates/diamond.conf.j2
+        dest: /etc/diamond/diamond.conf
+        owner: "{{diamond_user}}"
+        group: "{{diamond_group}}"
+
+    - name: Configure Diamond Graphite handler
+      include: _configure_graphite_handler.yml diamond_handler_conf_dir=/etc/diamond/handlers
+      tags:
+        - configure-graphite-handler
+
+    - name: Installl systemd configuration file
+      copy: src=files/diamond.service dest=/lib/systemd/system/diamond.service
+
+    - name: Enable and start diamond service
+      systemd: name=diamond state=started enabled=yes

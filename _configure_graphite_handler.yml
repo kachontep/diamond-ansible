@@ -1,0 +1,2 @@
+- name: Configure diamond graphite handler
+  template: src=templates/GraphiteHandler.conf.j2 dest={{diamond_handler_conf_dir}}/GraphiteHandler.conf
